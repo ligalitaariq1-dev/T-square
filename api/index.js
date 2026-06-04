@@ -1,18 +1,20 @@
-// api/index.js – Vercel serverless handler with Express
-const express = require('express');
-const path = require('path');
-const fetch = globalThis.fetch ?? require('node-fetch');
-const nodemailer = require('nodemailer');
-require('dotenv').config();
+// api/index.js – Vercel Serverless Handler
+import express from 'express';
+import path from 'path';
+import fetch from 'node-fetch';
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
 app.use(express.json());
-
-// Serve static files from organization-website
 app.use(express.static(path.join(__dirname, '../organization-website')));
 
-// Helper: call Gemini API
 async function queryGemini(message) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -80,10 +82,7 @@ app.post('/api/contact', async (req, res) => {
     if (isPlaceholder(user) || isPlaceholder(pass)) {
       console.warn('SMTP credentials not configured.');
       console.log(`[DEV] From: ${name} <${email}>, Message: ${message}`);
-      return res.json({ 
-        success: true, 
-        message: 'Message received!' 
-      });
+      return res.json({ success: true, message: 'Message received!' });
     }
 
     const transporter = nodemailer.createTransport({
@@ -110,12 +109,11 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Fallback to index.html for SPA (must be last)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../organization-website/index.html'));
 });
 
-// Export for Vercel
-module.exports = app;
+export default app;
+
 
 
