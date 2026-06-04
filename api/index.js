@@ -1,5 +1,6 @@
-// api/index.js – Express server for Vercel
+// api/index.js – Express server for Vercel with static file serving
 const express = require('express');
+const path = require('path');
 const fetch = globalThis.fetch ?? require('node-fetch');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
@@ -7,6 +8,9 @@ require('dotenv').config();
 const app = express();
 
 app.use(express.json());
+
+// Serve static files from organization-website (CSS, images, etc)
+app.use(express.static(path.join(__dirname, '../organization-website')));
 
 // Helper: call Gemini API
 async function queryGemini(message) {
@@ -106,4 +110,10 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
+// Fallback to index.html for SPA (must be last)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../organization-website/index.html'));
+});
+
 module.exports = app;
+
