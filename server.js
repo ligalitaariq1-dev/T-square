@@ -118,11 +118,15 @@ app.post('/contact', async (req, res) => {
   }
 });
 
-// Serve the static website files
+// Serve the static website files (must come BEFORE the catch-all route)
 app.use(express.static('organization-website'));
 
+// API routes (must come BEFORE the catch-all route)
+// /gemini and /contact are already defined above
+
 // Fallback to index.html for any unknown routes (SPA support)
-app.get(/.*/, (req, res) => {
+// This must be LAST so it doesn't intercept CSS, images, or API calls
+app.get(/^\/$|^\/[^.]+$/, (req, res) => {
   res.sendFile(require('path').join(__dirname, 'organization-website', 'index.html'));
 });
 
