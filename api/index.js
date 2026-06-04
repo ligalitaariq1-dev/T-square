@@ -1,4 +1,4 @@
-// api/index.js – Express server for Vercel with static file serving
+// api/index.js – Vercel serverless handler with Express
 const express = require('express');
 const path = require('path');
 const fetch = globalThis.fetch ?? require('node-fetch');
@@ -9,7 +9,7 @@ const app = express();
 
 app.use(express.json());
 
-// Serve static files from organization-website (CSS, images, etc)
+// Serve static files from organization-website
 app.use(express.static(path.join(__dirname, '../organization-website')));
 
 // Helper: call Gemini API
@@ -78,11 +78,11 @@ app.post('/api/contact', async (req, res) => {
     const isPlaceholder = (str) => !str || str.startsWith('YOUR_') || str.includes('YOUR_GMAIL_') || str.includes('YOUR_GEMINI_');
 
     if (isPlaceholder(user) || isPlaceholder(pass)) {
-      console.warn('SMTP credentials not configured. Logging submission to console.');
-      console.log(`[DEV SUBMISSION] From: ${name} <${email}>, Message: ${message}`);
+      console.warn('SMTP credentials not configured.');
+      console.log(`[DEV] From: ${name} <${email}>, Message: ${message}`);
       return res.json({ 
         success: true, 
-        message: 'Message received! (Running in sandbox: SMTP credentials not set).' 
+        message: 'Message received!' 
       });
     }
 
@@ -106,7 +106,7 @@ app.post('/api/contact', async (req, res) => {
 
   } catch (err) {
     console.error('Contact submission failed:', err);
-    res.status(500).json({ error: 'An internal error occurred while processing your message.' });
+    res.status(500).json({ error: 'An internal error occurred.' });
   }
 });
 
@@ -115,5 +115,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../organization-website/index.html'));
 });
 
+// Export for Vercel
 module.exports = app;
+
 
