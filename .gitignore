@@ -11,3 +11,4 @@ test-models.js
 dist/
 build/
 .vercel/
+.vercel
