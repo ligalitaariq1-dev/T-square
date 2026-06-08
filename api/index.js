@@ -1,20 +1,24 @@
-// api/index.js – Vercel Serverless Handler
+// api/index.js – Vercel serverless entry point
+// ----------------------------------------------------------
+// This file mirrors the functionality of the original server.js but uses ESM imports
+// (required because "type": "module" is set in package.json). It is exported as the
+// default Express app, which Vercel automatically invokes as a serverless function.
+
 import express from 'express';
-import path from 'path';
 import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
 
-dotenv.config();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config(); // Load .env variables (ignored via .gitignore)
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../organization-website')));
 
+// ---------------------------------------------------------------------
+// Helper: call Gemini API – same validation & error handling as original.
+// ---------------------------------------------------------------------
 async function queryGemini(message) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -22,15 +26,12 @@ async function queryGemini(message) {
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-  const body = {
-    contents: [{ role: 'user', parts: [{ text: message }] }]
-  };
+  const body = { contents: [{ role: 'user', parts: [{ text: message }] }] };
 
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -43,7 +44,10 @@ async function queryGemini(message) {
   return reply || 'I could not generate a response.';
 }
 
-app.post('/api/gemini', async (req, res) => {
+// ---------------------------------------------------------------------
+// /gemini endpoint – forwards a message to Gemini and returns the reply.
+// ---------------------------------------------------------------------
+app.post('/gemini', async (req, res) => {
   try {
     const { message } = req.body;
     if (!message) {
@@ -57,10 +61,14 @@ app.post('/api/gemini', async (req, res) => {
   }
 });
 
-app.post('/api/contact', async (req, res) => {
+// ---------------------------------------------------------------------
+// /contact endpoint – validates input and sends an email via SMTP.
+// ---------------------------------------------------------------------
+app.post('/contact', async (req, res) => {
   try {
     const { name, email, message } = req.body;
-    
+
+    // Input validation (length & format checks)
     if (!name || typeof name !== 'string' || name.trim().length === 0 || name.length > 100) {
       return res.status(400).json({ error: 'Invalid or missing name' });
     }
@@ -71,49 +79,73 @@ app.post('/api/contact', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or missing message' });
     }
 
+    // SMTP configuration – pulled from environment variables.
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const port = parseInt(process.env.SMTP_PORT, 10) || 587;
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
     const recipient = process.env.CONTACT_RECIPIENT || 'ligalitaariq@gmail.com';
 
-    const isPlaceholder = (str) => !str || str.startsWith('YOUR_') || str.includes('YOUR_GMAIL_') || str.includes('YOUR_GEMINI_');
-
+    const isPlaceholder = (str) => !str || str.startsWith('YOUR_') || str.includes('YOUR_GMAIL_');
     if (isPlaceholder(user) || isPlaceholder(pass)) {
-      console.warn('SMTP credentials not configured.');
-      console.log(`[DEV] From: ${name} <${email}>, Message: ${message}`);
-      return res.json({ success: true, message: 'Message received!' });
+      console.warn('SMTP credentials not configured – running in dev mode. Logging submission details only.');
+      console.log(`[DEV SUBMISSION] From: ${name} <${email}>, Message: ${message}`);
+      return res.json({
+        success: true,
+        message: 'Message received! (SMTP not configured – see server logs).',
+      });
     }
 
     const transporter = nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
-      auth: { user, pass }
+      auth: { user, pass },
     });
 
     const mailOptions = {
       from: `"${name}" <${email}>`,
       to: recipient,
-      subject: `New T-Square Contact Form Submission from ${name}`,
-      text: `You have received a new message from the contact form on T-Square website:\n\nName: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-      replyTo: email
+      subject: `New T‑Square Contact Form Submission from ${name}`,
+      text: `You have received a new message from the contact form:\n\nName: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+      replyTo: email,
     };
 
     await transporter.sendMail(mailOptions);
     res.json({ success: true, message: 'Your message has been sent successfully!' });
-
   } catch (err) {
     console.error('Contact submission failed:', err);
-    res.status(500).json({ error: 'An internal error occurred.' });
+    res.status(500).json({ error: 'An internal error occurred while processing your message.' });
   }
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../organization-website/index.html'));
+// ---------------------------------------------------------------------
+// Serve static website assets (organization-website folder).
+// ---------------------------------------------------------------------
+app.use(express.static('organization-website', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css')) res.set('Content-Type', 'text/css');
+    if (path.endsWith('.js')) res.set('Content-Type', 'application/javascript');
+  },
+}));
+
+// Fallback for SPA routes – return index.html for non‑file paths.
+app.use((req, res, next) => {
+  // If request includes a file extension, let static middleware handle 404
+  if (req.path.includes('.')) {
+    return next();
+  }
+  // Otherwise serve the SPA entry point
+  res.sendFile(require('path').join(process.cwd(), 'organization-website', 'index.html'));
 });
 
+// Export the Express app for Vercel.
 export default app;
 
-
-
+// Start the server locally when not running in Vercel (e.g., npm start)
+if (!process.env.VERCEL) {
+  const listenPort = PORT;
+  app.listen(listenPort, () => {
+    console.log(`🚀 Local server listening on http://localhost:${listenPort}`);
+  });
+}

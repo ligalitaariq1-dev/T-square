@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+.vscode/
+settings.json
+test-models.js
+*.jpg
+*.png
+*.jpeg
+.DS_Store
+dist/
+build/
+.vercel/
+.vercel
