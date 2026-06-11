@@ -4,9 +4,9 @@ node_modules/
 .vscode/
 settings.json
 test-models.js
-*.jpg
-*.png
-*.jpeg
+
+
+
 .DS_Store
 dist/
 build/
