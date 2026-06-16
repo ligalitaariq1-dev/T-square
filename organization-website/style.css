@@ -130,7 +130,6 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('hero_background_1780157248287.png') center/cover no-repeat;
   filter: brightness(0.6);
   z-index: -1;
 }
@@ -172,7 +171,11 @@ body {
   width: fit-content;
 }
 
-.site-logo { max-width: 150px; margin: 0 auto 1rem; display: block; }
+.site-logo {
+  max-width: 150px;
+  margin: 0 auto 1rem;
+  display: block;
+}
 
 /* Sections */
 .section {
@@ -539,9 +542,17 @@ body {
 }
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .academic-card h3 {
@@ -640,6 +651,7 @@ body {
   .timeline-container::before {
     left: 20px;
   }
+
   .timeline-item {
     width: 100%;
     left: 0 !important;
@@ -647,10 +659,12 @@ body {
     padding-right: 0 !important;
     text-align: left !important;
   }
+
   .timeline-item:nth-child(odd) .timeline-badge,
   .timeline-item:nth-child(even) .timeline-badge {
     left: 10px;
   }
+
   .timeline-item:nth-child(odd) .timeline-content p {
     text-align: left !important;
   }
