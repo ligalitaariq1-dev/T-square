@@ -9,8 +9,14 @@ import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config(); // Load .env variables (ignored via .gitignore)
+
+// ES-module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const STATIC_DIR = path.join(__dirname, '..', 'organization-website');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -123,7 +129,7 @@ app.post('/contact', async (req, res) => {
 // ---------------------------------------------------------------------
 // Serve static website assets (organization-website folder).
 // ---------------------------------------------------------------------
-app.use(express.static('organization-website', {
+app.use(express.static(STATIC_DIR, {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.css')) res.set('Content-Type', 'text/css');
     if (filePath.endsWith('.js')) res.set('Content-Type', 'application/javascript');
@@ -137,7 +143,7 @@ app.use((req, res, next) => {
     return next();
   }
   // Otherwise serve the SPA entry point
-  res.sendFile(path.join(process.cwd(), 'organization-website', 'index.html'));
+  res.sendFile(path.join(STATIC_DIR, 'index.html'));
 });
 
 // Export the Express app for Vercel.

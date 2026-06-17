@@ -1,13 +1,18 @@
 {
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/gemini",
-      "destination": "/api/index.js"
-    },
-    {
-      "source": "/contact",
-      "destination": "/api/index.js"
+      "src": "api/index.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["organization-website/**"]
+      }
     }
+  ],
+  "routes": [
+    { "src": "/gemini", "dest": "api/index.js" },
+    { "src": "/contact", "dest": "api/index.js" },
+    { "src": "/(.*)", "dest": "api/index.js" }
   ]
 }
+
